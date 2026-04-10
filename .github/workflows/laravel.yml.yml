@@ -1,0 +1,87 @@
+name: Laravel CI-CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: spjjtrust
+          MYSQL_USER: root
+          MYSQL_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # 🔹 Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 🔹 Setup PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, zip
+
+      # 🔹 Cache Composer
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('**/composer.lock') }}
+
+      # 🔹 Install dependency
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      # 🔹 Setup ENV
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Configure Database
+        run: |
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=spjjtrust/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+
+      # 🔹 Generate key
+      - name: Generate Key
+        run: php artisan key:generate
+
+      # 🔹 Wait MySQL ready
+      - name: Wait for MySQL
+        run: |
+          for i in {1..10}; do
+            mysql -h 127.0.0.1 -u root -proot -e "SELECT 1" && break
+            sleep 3
+          done
+
+      # 🔹 Migration
+      - name: Run Migration
+        run: php artisan migrate --force
+
+      # 🔹 Permission
+      - name: Set Permissions
+        run: chmod -R 775 storage bootstrap/cache
+
+      # 🔹 Run test
+      - name: Run Tests
+        run: php artisan test
