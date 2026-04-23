@@ -99,6 +99,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('admin.kegiatan', [ProkerController::class, 'kegiatanIndex'])->name('admin.kegiatan');
     Route::post('kegiatan.store', [ProkerController::class, 'storeKegiatan'])->name('kegiatan.store');
     Route::get('admin.structur.organization', [OrganizationController::class, 'create'])->name('admin.structur.organization');
+    Route::post('/organization/store', [OrganizationController::class, 'store'])->name('organization.store');
     // Member
     Route::get('/member/beranda', function () {
         return view('member.home');
