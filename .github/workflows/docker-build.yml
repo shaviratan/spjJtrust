@@ -1,6 +1,7 @@
 name: Laravel CI-CD
 
 env:
+  # Memaksa penggunaan Node 24 agar tidak muncul warning deprecation
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -14,82 +15,56 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # Membuat kontainer database sementara untuk testing
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: spjjtrust
-          # MYSQL_USER: root
-          # MYSQL_PASSWORD: root
-        # ports:
-        #   - 3306:3306
+        ports:
+          - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=3
 
     steps:
-      # 🔹 Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 🔹 Setup PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, zip
+          tools: composer:v2
 
-      # 🔹 Cache Composer
+      # Optimasi: Cache vendor agar run berikutnya lebih cepat
       - name: Cache Composer
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
-      # 🔹 Install dependency
       - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-      # 🔹 Setup ENV
-      - name: Copy .env
-        run: cp .env.example .env
-
-      - name: Configure Database
+      - name: Prepare Environment
         run: |
-          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
-          sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=spjjtrust/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+          cp .env.example .env
+          php artisan key:generate
 
-      # 🔹 Generate key
-      - name: Generate Key
-        run: php artisan key:generate
-
-      # 🔹 Install MySQL client
-      - name: Install MySQL client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
-
-      # 🔹 Wait MySQL ready
-      - name: Wait for MySQL
+      - name: Run Migration & Tests
+        env:
+          # Kita masukkan kredensial DB langsung di sini sebagai env variable
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: spjjtrust
+          DB_USERNAME: root
+          DB_PASSWORD: root
         run: |
-          for i in {1..20}; do
-            mysqladmin ping -h "127.0.0.1" -proot --silent && break
-            echo "Waiting for MySQL..."
-            sleep 3
-          done
-
-      # 🔹 Migration
-      - name: Run Migration
-        run: php artisan migrate --force
-
-      # 🔹 Permission
-      - name: Set Permissions
-        run: chmod -R 775 storage bootstrap/cache
-
-      # 🔹 Run test
-      - name: Run Tests
-        run: php artisan test
+          php artisan migrate --force
+          php artisan test
