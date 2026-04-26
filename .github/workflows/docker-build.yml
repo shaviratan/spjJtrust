@@ -18,8 +18,8 @@ jobs:
           MYSQL_DATABASE: spjjtrust
           # MYSQL_USER: root
           # MYSQL_PASSWORD: root
-        ports:
-          - 3306:3306
+        # ports:
+        #   - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h localhost -proot"
           --health-interval=10s
@@ -57,7 +57,7 @@ jobs:
       - name: Configure Database
         run: |
           sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=mysql/' .env
           sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=spjjtrust/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
