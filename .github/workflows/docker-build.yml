@@ -25,7 +25,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-          --default-authentication-plugin=mysql_native_password
 
     steps:
       # 🔹 Checkout code
@@ -67,11 +66,15 @@ jobs:
       - name: Generate Key
         run: php artisan key:generate
 
+      # 🔹 Install MySQL client
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
       # 🔹 Wait MySQL ready
       - name: Wait for MySQL
         run: |
           for i in {1..20}; do
-            mysqladmin ping -h "127.0.0.1" -proot --silent && break
+            mysqladmin ping -h "mysql" -proot --silent && break
             echo "Waiting for MySQL..."
             sleep 3
           done
