@@ -12,15 +12,38 @@ use App\Models\Role;
 
 class FrontendController extends Controller
 {
-
-    public function show($slug)
+    public function index()
     {
-        // Cari berita berdasarkan slug, pastikan statusnya sudah 'published'
-        $item = News::where('slug', $slug)
-                    ->where('status', 'published')
-                    ->firstOrFail(); // Jika tidak ketemu, munculkan error 404
-
-        return view('frontend.show', compact('item'));
+        $role = \App\Models\Role::orderBy('created_at', 'desc')
+        ->paginate(10);
+        return view('admin.userAndAccess.userRole', compact('role'));
     }
+
+     public function store(Request $request) {
+        $data = $request->all();
+        $data['name'] = $request->role_name;
+        $data['description'] = $request->description;
+        $data['created_at'] = Auth::user()->nik;
+        Role::create($data);
+        return redirect()->back()->with('success', 'Pengumuman Anda berhasil dikirim!');
+    }
+
+    public function update(Request $request, $id)
+    {
+        $role = Role::findOrFail($id);
+        $role->update([
+            'name'   => $request->role_name,
+            'description' => $request->description,
+        ]);
+        return back()->with('success', 'Role berhasil diperbarui!');
+    }
+
+        public function delete($id)
+    {
+        $user = Role::findOrFail($id);
+        $user->delete();
+        return back()->with('success', 'Role berhasil dihapus!');
+    }
+    
 
 }
