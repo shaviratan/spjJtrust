@@ -47,7 +47,7 @@ class CompanyProfileController extends Controller
         $identity->fill([
             'profile_description' => $request->profile_description,
             'visi' => $request->visi,
-            'misi' => $request->misi,
+            'misi' => json_encode($request->misi),
         ]);
         $identity->save();
         return back()->with('success', 'Data berhasil diperbarui di public/uploads/compro!');
