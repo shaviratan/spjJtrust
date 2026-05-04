@@ -7,16 +7,19 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Role; 
+use App\Models\Menu; 
 
 
 
-class FrontendController extends Controller
+class RoleController extends Controller
 {
     public function index()
     {
         $role = \App\Models\Role::orderBy('created_at', 'desc')
         ->paginate(10);
-        return view('admin.userAndAccess.userRole', compact('role'));
+         $menus = Menu::with('subMenu')->get();
+         $access = \DB::table('ms_access')->get();
+        return view('admin.userAndAccess.userRole', compact('role','menus','access'));
     }
 
      public function store(Request $request) {

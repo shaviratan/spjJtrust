@@ -98,8 +98,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('gallery.store', [ProkerController::class, 'storeGallery'])->name('gallery.store');
     Route::get('admin.kegiatan', [ProkerController::class, 'kegiatanIndex'])->name('admin.kegiatan');
     Route::post('kegiatan.store', [ProkerController::class, 'storeKegiatan'])->name('kegiatan.store');
+    Route::get('admin.kegiatan.data', [ProkerController::class, 'indexDataKegiatan'])->name('admin.kegiatan.data');
+    Route::put('/kegiatan/{id}', [ProkerController::class, 'updateKegiatan'])->name('kegiatan.update');
+    Route::delete('/kegiatan/{id}', [ProkerController::class, 'destroyKegiatan'])->name('kegiatan.destroy');
     Route::get('admin.structur.organization', [OrganizationController::class, 'create'])->name('admin.structur.organization');
     Route::post('/organization/store', [OrganizationController::class, 'store'])->name('organization.store');
+    Route::get('/organization/count', [OrganizationController::class, 'count']);
     // Member
     Route::get('/member/beranda', function () {
         return view('member.home');

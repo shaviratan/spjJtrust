@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Officer; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -50,7 +51,7 @@ class UserController extends Controller
         $officer = Officer::where('nik', $request->nik)->first();
         $user = User::create([
         'fullname' => strtoupper($officer->name),
-        'noHP' => $request->noHP,
+        'noHP' => "0" . $request->no_hp,
         'email' => $request->email,
         'nik' => $request->nik,
         'role' => $request->role,

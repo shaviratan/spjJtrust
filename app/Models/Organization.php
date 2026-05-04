@@ -13,14 +13,14 @@ class Organization extends Model
 
     protected $primaryKey = 'id';
 
-    public $timestamps = false; // karena kamu pakai created_date dll
+    public $timestamps = false; 
 
     protected $fillable = [
         'position_title',
         'full_name',
         'region_name',
         'term_period',
-        'parent_id', // 🔥 ini penting buat pid
+        'parent_id', 
         'created_by',
         'created_date',
         'created_ip',

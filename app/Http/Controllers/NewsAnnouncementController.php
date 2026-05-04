@@ -92,10 +92,10 @@ class NewsAnnouncementController extends Controller
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('frontendpartials/assets/img'), $filename);
+            $file->move(public_path('frontendpartials/assets/img/news'), $filename);
             $data['gambar'] = $filename;
         }
-        dd($data);
+        // dd($data);
         News::create($data);
         return redirect()->back()->with('success', 'Pengumuman Anda berhasil dikirim!');
     }
@@ -122,7 +122,13 @@ class NewsAnnouncementController extends Controller
         $news->judul = $request->judul;
         $news->isi = $request->isi;
         $news->status = $request->status;
-        $news->slug = Str::slug($request->judul);;
+        $news->slug = Str::slug($request->judul);
+        if ($request->hasFile('gambar')) {
+            $file = $request->file('gambar');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('frontendpartials/assets/img/news'), $filename);
+            $news->gambar = $filename;
+        }
         $news->updated_by = Auth::user()->nik;
         $news->updated_date = now();
         $news->updated_ip = $request->ip();

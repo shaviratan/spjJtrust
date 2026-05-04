@@ -63,7 +63,6 @@
                 reader.onload = function(e) {
                     const col = document.createElement("div");
                     col.className = "col-4 col-md-3 position-relative";
-
                     col.innerHTML = `
                         <div class="ratio ratio-1x1 shadow-sm rounded overflow-hidden">
                             <img src="${e.target.result}" class="img-fluid object-fit-cover" style="object-fit: cover;">

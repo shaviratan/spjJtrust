@@ -36,14 +36,18 @@
             </div>
         @endif
         <div class="card shadow-sm">
+            
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0" style="color: #f7f9fa;">Data Anggota</h5>
+                <h5 class="mb-0" style="color: #f7f9fa;">Data Officer</h5>
                 <a href="{{ route('admin.anggota.export') }}" class="btn btn-info btn-sm text-white"><i class="bi bi-download"></i> Download Data (Excel)</a>
                 <a href="{{ route('admin.anggota.tambah') }}" class="btn btn-light btn-sm" >
-                    + Tambah Anggota
+                    + Tambah Officer
                 </a>
             </div>
             <div class="card-body">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <input type="text" id="searchInput" class="form-control w-50" placeholder="Cari nama, NIK, atau email...">
+            </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light">
@@ -235,6 +239,22 @@ document.addEventListener("DOMContentLoaded", function() {
             bsAlert.close();
         }, 5000); // 5 detik
     }
+});
+
+// ====================== SEARCH TABLE =======================
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let keyword = this.value.toLowerCase();
+    let rows = document.querySelectorAll("table tbody tr");
+
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+
+        if (text.includes(keyword)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
 });
 </script>
 

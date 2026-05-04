@@ -26,6 +26,9 @@
 
         <div class="card shadow-sm border-0">
             <div class="card-body">
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <input type="text" id="searchInput" class="form-control w-50" placeholder="Cari nama, NIK, atau email...">
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -286,6 +289,22 @@ if (modalReset) {
         textName.textContent = name;
     });
 }
+
+// ====================== SEARCH TABLE =======================
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let keyword = this.value.toLowerCase();
+    let rows = document.querySelectorAll("table tbody tr");
+
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+
+        if (text.includes(keyword)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+});
 </script>
 
 </body>

@@ -42,9 +42,9 @@ class AnggotaController extends Controller
             'created_date'  => now(),
             'created_ip'    => $request->ip()
         ];   
-        // \DB::table('ms_officer')->insert([
-        //     $param
-        // ]);   
+        \DB::table('ms_officer')->insert([
+            $param
+        ]);   
          return redirect()->route('admin.anggota.tambah')->with('success', 'Data anggota berhasil ditambahkan!');
     }
 

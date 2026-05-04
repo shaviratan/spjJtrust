@@ -1,116 +1,78 @@
 <!DOCTYPE html>
-<html lang="zxx">
+<html lang="en">
 @include('layouts.head')
 
 <style>
-    #tree {
-        width: 100%;
-        height: 100vh;
-    }
+#tree {
+    width: 100%;
+    height: 100vh;
+}
 </style>
 
 <body>
+
 @include('components.sidebar')
 @include('components.header')
 
 <main class="nxl-container">
     <div class="card shadow-sm border-0">
-        
         <div class="card-body p-4">
 
-            <!-- HEADER -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0 fw-bold">Union Structure</h4>
-
-                <button class="btn btn-success px-4" onclick="openModal('Add')">
-                    + Add Structure
-                </button>
+            <div class="d-flex justify-content-between mb-3">
+                <h4>Union Structure</h4>
+                <button class="btn btn-success" onclick="openModal()">+ Add</button>
             </div>
+
             @if($isEmpty)
             <div class="alert alert-warning text-center">
-                ⚠️ Data struktur organisasi tidak ditemukan.<br>
-                <strong>Berikut adalah contoh struktur organisasi.</strong>
+                Data kosong, menggunakan struktur default
             </div>
             @endif
-            <!-- CHART CONTAINER -->
-            <div class="bg-light rounded p-3">
-                <div id="tree" style="width: 100%; height: 80vh;"></div>
-            </div>
+
+            <div id="tree"></div>
 
         </div>
-
     </div>
 </main>
 
-<div class="modal fade" id="formModal" tabindex="-1">
+<!-- MODAL -->
+<div class="modal fade" id="formModal">
   <div class="modal-dialog">
     <div class="modal-content p-3">
-      <h5 id="modalTitle">Form</h5>
+      <h5>Form</h5>
+
       <input type="hidden" id="nodeId">
+
       <div class="mb-2">
-        <label>Parent (Atasan)</label>
-        <select id="parentId" class="form-control" onchange="handleParentChange()">
-            <option value="">-- Root (Chairman) --</option>
-        </select>
+        <label>Parent</label>
+        <select id="parentId" class="form-control"></select>
       </div>
+
       <div class="mb-2">
         <label>Position</label>
         <input type="text" id="title" class="form-control">
-        <small id="infoPosition" class="text-muted"></small>
       </div>
+
       <div class="mb-2">
         <label>Name</label>
         <input type="text" id="name" class="form-control">
       </div>
-      <!-- BUTTON -->
-      <div class="d-flex justify-content-end gap-2 mt-3">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-        </button>
-        <button type="button" class="btn btn-primary" onclick="saveNode()">
-            Save
-        </button>
+
+      <div class="text-end mt-3">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNode()">Save</button>
       </div>
     </div>
   </div>
 </div>
 
-
-
 @include('components.script')
 
-<!-- ORGCHART JS -->
 <script src="https://balkan.app/js/OrgChart.js"></script>
 
 <script>
-OrgChart.templates.ana.defs = `
-<linearGradient id="blueGradient" x1="0" x2="0" y1="0" y2="1">
-    <stop offset="0%" stop-color="#42A5F5"/>
-    <stop offset="100%" stop-color="#1E88E5"/>
-</linearGradient>
-`;
 
-OrgChart.templates.ana.size = [300, 140];
-
-OrgChart.templates.ana.node = function(node){
-    return `<rect x="0" y="0" height="${node.h}" width="${node.w}"
-            fill="url(#blueGradient)" stroke-width="1" stroke="#aeaeae" rx="15" ry="15"></rect>`;
-};
-
-OrgChart.templates.ana.field_0 = function(node, data, template, config, value){
-    return OrgChart.wrapText(value, 
-        `<text style="font-size: 20px; font-weight:bold;" fill="#ffffff" 
-        x="${node.w / 2}" y="${node.h -30}" text-anchor="middle"></text>`, 
-        node.w - 40, 2);
-};
-
-OrgChart.templates.ana.field_1 = function(node, data, template, config, value){
-    return OrgChart.wrapText(value, 
-        `<text style="font-size: 15px;" fill="#ffffff" 
-        x="${node.w / 2}" y="40" text-anchor="middle"></text>`, 
-        node.w - 40, 2);
-};
-
+// ================= DEFAULT STRUCTURE =================
 let defaultNodes  = [
     { id: 1, title: "Chairman", name: "Mr.D" },
     { id: 2, pid: 1, tags: ["assistant"], title: "Advisor", name: "Mr. A" },
@@ -133,105 +95,73 @@ let defaultNodes  = [
     { id: 18, pid: 13, title: "Region V (Sumatra)", name: "Mr. R" },
     { id: 19, pid: 13, title: "Region VI (Kalimantan & Sulawesi)", name: "Mr. S" }
 ];
-
+console.log("DEFAULT:", defaultNodes);
+// ================= DB DATA =================
 let dbNodes = @json($nodes);
+console.log("DB NODES:", dbNodes);
+// ================= MERGE =================
+let nodes = (defaultNodes || []).map(def => {
 
-let nodes = defaultNodes.map(def => {
-    let match = dbNodes.find(d => d.title === def.title);
+    let match = dbNodes.find(d =>
+        d.title.replace(/\s+ke-\d+/, '') === def.title
+    );
 
-    if (match) {
+    if(match){
         return {
             ...def,
-            name: match.name
+            name: match.name + " (ke-" + (match.order || 1) + ")"
         };
     }
 
     return def;
 });
-
-var chart = new OrgChart(document.getElementById("tree"), {
+// ================= CHART =================
+let chart = new OrgChart(document.getElementById("tree"), {
     template: "ana",
-
-    layout: OrgChart.mixed,
-    scaleInitial: OrgChart.match.boundary,
-
-    enableSearch: false,
-    mouseScrool: OrgChart.action.none,
-    enableZoom: false,
-
-    nodeMenu: {
-        details: { text: "View" },
-        edit: { text: "Edit" },
-        remove: { text: "Delete" }
-    },
-
     nodeBinding: {
         field_0: "title",
         field_1: "name"
     },
-
-    nodes: nodes
+    nodes: nodes,
+    nodeMenu: {
+        edit: { text: "Edit" },
+        remove: { text: "Delete" }
+    }
 });
 
+// ================= LOAD PARENT =================
+function loadParentOptions(selectedId=null){
+    let select = document.getElementById("parentId");
+    select.innerHTML = '<option value="">-- Root --</option>';
 
-    chart.on('edit', function(sender, node){
-        openModal("Edit", node.id, node.pid, node);
-        return false;
-    });
+    chart.config.nodes.forEach(node => {
+        let option = document.createElement("option");
+        option.value = node.id;
+        option.text = node.title;
 
-    chart.on('remove', function(sender, node){
-        if(confirm("Yakin hapus?")){
-            chart.remove(node.id);
+        if(selectedId && node.id == selectedId){
+            option.selected = true;
         }
-        return false;
+
+        select.appendChild(option);
     });
-
-function openModal(type, id = null, parentId = null, data = null){
-    document.getElementById("modalTitle").innerText = type + " Node";
-    document.getElementById("nodeId").value = id || "";
-
-    loadParentOptions();
-
-    // set parent dropdown
-    document.getElementById("parentId").value = parentId || "";
-
-    if(data){
-        // MODE EDIT
-        document.getElementById("title").value = data.title;
-        document.getElementById("name").value = data.name;
-        document.getElementById("infoCount").innerText = "";
-    } else {
-        // MODE ADD
-        let parentNode = chart.get(parentId);
-
-        if(parentNode){
-            let parentTitle = parentNode.title;
-
-            // hitung jumlah node dengan jabatan sama
-            let count = chart.config.nodes.filter(n => n.title === parentTitle).length;
-
-            // AUTO ISI
-            document.getElementById("title").value = parentTitle;
-            document.getElementById("name").value = parentTitle + " ke-" + (count + 1);
-
-            //INFO JUMLAH
-            document.getElementById("infoCount").innerText =
-                "Saat ini jumlah " + parentTitle + " ada " + count;
-        }
-    }
-
-    var modal = new bootstrap.Modal(document.getElementById('formModal'));
-    modal.show();
 }
 
+// ================= MODAL =================
+function openModal(){
+    document.getElementById("title").value = "";
+    document.getElementById("name").value = "";
+    loadParentOptions();
+
+    new bootstrap.Modal(document.getElementById('formModal')).show();
+}
+
+// ================= SAVE =================
 function saveNode(){
-     let id = document.getElementById("nodeId").value;
-    let parentTitle = document.getElementById("parentId").value;
+
+    let parentId = document.getElementById("parentId").value || null;
     let title = document.getElementById("title").value;
     let name = document.getElementById("name").value;
-
-    let parentNode = chart.config.nodes.find(n => n.title === parentTitle);
-    let parentId = parentNode ? parentNode.id : null;
 
     fetch("{{ route('organization.store') }}", {
         method: "POST",
@@ -248,82 +178,24 @@ function saveNode(){
     .then(res => res.json())
     .then(res => {
         if(res.status === 'success'){
+            alert("✅ berhasil");
 
-            // ✅ ALERT SUCCESS
-            alert("✅ " + res.message);
-            chart.add({
-                id: Date.now(),
-                pid: parentId,
-                title: title,
-                name: name
-            });
-
-            bootstrap.Modal.getInstance(document.getElementById('formModal')).hide();
-
+            location.reload(); // reload biar merge ulang
         } else {
-            alert("❌ " + res.message);
+            alert("❌ gagal");
         }
-    })
-    .catch(err => {
-        // ERROR SERVER
-        alert("❌ Terjadi kesalahan server!");
-        console.error(err);
     });
 }
 
-function closeModal(){
-    let modal = bootstrap.Modal.getInstance(document.getElementById('formModal'));
-    modal.hide();
+// ================= DELETE =================
+function deleteNode(id){
+    fetch(`/organization/delete/${id}`)
+    .then(() => {
+        alert("✅ dihapus");
+        location.reload();
+    });
 }
 
-function loadParentOptions(selectedTitle = null){
-    let select = document.getElementById("parentId");
-    select.innerHTML = '<option value="">-- Root (Chairman) --</option>';
-    let uniqueTitles = [];
-    chart.config.nodes.forEach(node => {
-        if(!uniqueTitles.includes(node.title)){
-            uniqueTitles.push(node.title);
-            let option = document.createElement("option");
-            option.value = node.title; // 🔥 pakai title
-            option.text = node.title;
-            if(selectedTitle && node.title === selectedTitle){
-                option.selected = true;
-            }
-            select.appendChild(option);
-        }
-    });
-}
-function handleParentChange(){
-    let parentTitle = document.getElementById("parentId").value;
-    let info = document.getElementById("infoPosition");
-    if(!parentTitle){
-        info.innerText = "";
-        document.getElementById("title").value = "";
-        return;
-    }
-    info.innerText = "Loading...";
-    fetch(`/organization/count?title=${parentTitle}`, {
-        headers: {
-            'ngrok-skip-browser-warning': '1'
-        }
-    })
-    .then(res => res.json())
-    .then(res => {
-        //kalau DB kosong → count = 0
-        let count = res.count ?? 0;
-        info.innerText = `Saat ini ${parentTitle} ada ${count}`;
-        // AUTO POSITION
-        document.getElementById("title").value =
-            parentTitle + " ke-" + (count + 1);
-    })
-    .catch(err => {
-        console.error(err);
-        //fallback kalau API gagal
-        info.innerText = `Saat ini ${parentTitle} ada 0`;
-        document.getElementById("title").value =
-            parentTitle + " ke-1";
-    });
-}
 </script>
 
 </body>

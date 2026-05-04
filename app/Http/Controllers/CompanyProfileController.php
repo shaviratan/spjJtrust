@@ -15,6 +15,7 @@ class CompanyProfileController extends Controller
     public function index()
     {
         $data = Compro::first();
+        // dd($data);
         return view('admin.companyProfile.profile',compact('data'));
     }
 

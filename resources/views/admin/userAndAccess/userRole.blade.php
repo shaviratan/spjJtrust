@@ -90,12 +90,12 @@
                         <label class="form-label fw-bold">Nama Role</label>
                         <input type="text" name="role_name" class="form-control" placeholder="Administrator / Member" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3">       
                         <label class="form-label fw-bold">Deskripsi</label>
                         <textarea name="description" class="form-control" rows="3" placeholder="Jelaskan kegunaan role ini..." required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
+                <div class="modal-footer bg-light"> 
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary px-4">Simpan Role</button>
                 </div>
@@ -104,28 +104,73 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalEditRole" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">Edit Master Role</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
+<div class="modal fade" id="modalEditRole" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
             <form id="formEditRole" method="POST">
                 @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nama Role</label>
-                        <input type="text" name="role_name" id="edit_role_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Deskripsi</label>
-                        <textarea name="description" id="edit_description" class="form-control" rows="3" required></textarea>
-                    </div>
+                @method('PUT')
+
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Edit Role & Access</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-info text-white px-4">Update Role</button>
+
+                <div class="modal-body">
+
+                    <!-- ROLE -->
+                    <div class="mb-3">
+                        <label>Nama Role</label>
+                        <input type="text" name="role_name" id="edit_role_name" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Deskripsi</label>
+                        <textarea name="description" id="edit_description" class="form-control"></textarea>
+                    </div>
+
+                    <!-- ACCESS -->
+                    <div class="mb-3">
+                        <label class="fw-bold">Hak Akses</label>
+
+                        <div style="max-height:300px; overflow:auto;">
+                            @foreach($menus as $menu)
+                                <div class="border p-2 mb-2">
+
+                                    <!-- MENU -->
+                                    <label>
+                                        <input type="checkbox"
+                                            class="menu-checkbox"
+                                            name="menus[]"
+                                            value="{{ $menu->id }}">
+                                        <b>
+                                            <i class="{{ $menu->icon }}"></i>
+                                            {{ $menu->name }}
+                                        </b>
+                                    </label>
+
+                                    <!-- SUBMENU -->
+                                    @foreach($menu->subMenu as $sub)
+                                        <div class="ms-4">
+                                            <label>
+                                                <input type="checkbox"
+                                                    class="submenu-checkbox menu-{{ $menu->id }}"
+                                                    name="submenus[]"
+                                                    value="{{ $sub->id }}">
+                                                {{ $sub->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-info text-white">Update</button>
                 </div>
             </form>
         </div>
@@ -139,19 +184,47 @@
     document.addEventListener("DOMContentLoaded", function() {
         // Logic Modal Edit: Passing data dari button ke form
         const modalEditRole = document.getElementById('modalEditRole');
-        if (modalEditRole) {
-            modalEditRole.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                const id = button.getAttribute('data-id');
-                const name = button.getAttribute('data-name');
-                const desc = button.getAttribute('data-description');
-                
-                const form = modalEditRole.querySelector('#formEditRole');
-                form.action = "{{ url('admin/role/update') }}/" + id;
-                modalEditRole.querySelector('#edit_role_name').value = name;
-                modalEditRole.querySelector('#edit_description').value = desc;
+        modalEditRole.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        const desc = button.getAttribute('data-description');
+        // set form action
+        const form = document.getElementById('formEditRole');
+        form.action = "/admin/role/update/" + id;
+        // isi input
+        document.getElementById('edit_role_name').value = name;
+        document.getElementById('edit_description').value = desc;
+        // reset checkbox
+        document.querySelectorAll('.menu-checkbox, .submenu-checkbox')
+            .forEach(cb => cb.checked = false);
+        // ambil access dari blade
+        const access = @json($access);
+        access.forEach(item => {
+            if (item.role_id == id) {
+                if (item.menu_id) {
+                    let menu = document.querySelector(`input[name="menus[]"][value="${item.menu_id}"]`);
+                    if (menu) menu.checked = true;
+                }
+                if (item.sub_menu_id) {
+                    let sub = document.querySelector(`input[name="submenus[]"][value="${item.sub_menu_id}"]`);
+                    if (sub) sub.checked = true;
+                }
+            }
             });
-        }
+        });
+
+        // auto check submenu saat menu dicentang
+        document.querySelectorAll('.menu-checkbox').forEach(menu => {
+            menu.addEventListener('change', function() {
+                let id = this.value;
+
+                document.querySelectorAll('.menu-' + id).forEach(sub => {
+                    sub.checked = this.checked;
+                });
+            });
+        });
+
         // Logic Delete Confirmation
         document.querySelectorAll('.btn-delete-role').forEach(button => {
             button.addEventListener('click', function() {

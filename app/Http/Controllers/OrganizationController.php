@@ -14,20 +14,19 @@ class OrganizationController extends Controller
     public function create() 
     {
         $data = DB::table('union_structure')->get();
-
         if ($data->isEmpty()) {
             $nodes = [];
         } else {
-            $nodes = $data->map(function ($item) {
+            $nodes = DB::table('union_structure')->get()->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'pid' => $item->parent_id,
-                    'title' => $item->position_title,
-                    'name' => $item->full_name
+                    'title' => $item->position_title, // Chairman (tanpa ke-1)
+                    'name' => $item->full_name,
+                    'order' => $item->order_number ?? 1 // ke-1, ke-2
                 ];
-            })->values()->toArray();
+            });
         }
-
         return view('admin.organization.organizationCreate', [
             'nodes' => $nodes,
             'isEmpty' => $data->isEmpty()
@@ -72,11 +71,15 @@ class OrganizationController extends Controller
             'count' => $count
         ]);
     }
+
     public function delete($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
-        return back()->with('success', 'User berhasil dihapus!');
+        DB::table('union_structure')->where('id', $id)->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data berhasil dihapus'
+        ]);
     }
    
 }

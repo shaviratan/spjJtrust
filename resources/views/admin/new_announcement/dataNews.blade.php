@@ -88,7 +88,7 @@
 <div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
     <div style="background:white; padding:25px; border-radius:10px; width:1000px; max-width:90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
         <h5 class="text-center mb-4">Edit Berita</h5>
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" id="edit_id" name="id">
             
@@ -109,6 +109,17 @@
             <div class="mb-3">
                 <label class="fw-bold">Isi Berita</label>
                 <textarea id="edit_isi" name="isi" class="form-control" rows="6" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="fw-bold">Gambar Berita</label>
+                <input type="file" id="edit_gambar" name="gambar" class="form-control" accept="image/*">
+            </div>
+
+            <div class="mb-3 text-center">
+                <img id="preview_gambar" 
+                    src="" 
+                    style="max-width: 200px; display:none; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2);" />
             </div>
 
             <div class="d-flex justify-content-between mt-4">
@@ -139,7 +150,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.getElementById("edit_isi").value = data.isi;
                 let statusSelect = document.getElementById("edit_status");
                 statusSelect.value = data.status;
-                editModal.style.display = "flex";
+                let preview = document.getElementById("preview_gambar");
+                if (data.gambar) {
+                    preview.src = `/frontendpartials/assets/img/news/${data.gambar}`;
+                    preview.style.display = "block";
+                } else {
+                    preview.style.display = "none";
+                }
+                editModal.style.display = "flex";  
             })
             .catch(err => alert("Gagal mengambil data"));
         });
@@ -168,6 +186,19 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         })
         .catch(err => alert("Terjadi kesalahan jaringan"));
+    });
+    document.getElementById("edit_gambar").addEventListener("change", function(e) {
+    let file = e.target.files[0];
+    let preview = document.getElementById("preview_gambar");
+
+    if (file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+        }
+        reader.readAsDataURL(file);
+    }
     });
 });
 </script>

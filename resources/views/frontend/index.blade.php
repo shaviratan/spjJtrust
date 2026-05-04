@@ -166,6 +166,21 @@
     color: #c81b3a;
     letter-spacing: 0.5px;
 }
+
+.profile-img {
+    width: 100%;
+    max-width: 300px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+    .profile-img {
+        height: 220px;
+        max-width: 100%;
+    }
+}
 </style>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -244,7 +259,7 @@
     <div class="row gy-4">
       <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
         <h3>Profile</h3>
-        <img src="{{ asset('frontendpartials/assets/img/about.jpg') }}" class="img-fluid rounded-4 mb-4" alt="">
+        <img src="{{ asset($compro[0]->profile_image) }}" class="img-fluid profile-img" alt="">
         <p>{{ $compro[0]->profile_description }}
         </p>
       </div>
@@ -256,17 +271,34 @@
            {{ $compro[0]->visi }}
             </p>
             <h4 class="mt-4 mb-3">Misi</h4>
-            <ul>
-              @if(is_array($compro[0]->misi) || is_object($compro[0]->misi))
-                  @foreach($compro[0]->misi as $misi)
+              @php
+                  $misi = $compro[0]->misi ?? [];
+
+                  // decode 2x kalau masih string JSON double encode
+                  if (is_string($misi)) {
+                      $misi = json_decode($misi, true);
+
+                      // kalau masih string (double encode case)
+                      if (is_string($misi)) {
+                          $misi = json_decode($misi, true);
+                      }
+                  }
+
+                  // pastikan selalu array
+                  if (!is_array($misi)) {
+                      $misi = [];
+                  }
+              @endphp
+
+              <ul>
+                  @forelse($misi as $item)
                       <li>
-                          <i class="bi bi-check-circle-fill"></i> {{ $misi }}
+                          <i class="bi bi-check-circle-fill"></i> {{ $item }}
                       </li>
-                  @endforeach
-              @else
-                  <li><i class="bi bi-check-circle-fill"></i> {{ $compro[0]->misi }}</li>
-              @endif
-            </ul>
+                  @empty
+                      <li><i class="bi bi-check-circle-fill"></i> Tidak ada data misi</li>
+                  @endforelse
+              </ul>
             <div class="position-relative mt-4">
             <img src="{{ asset('frontendpartials/assets/img/about-2.jpg') }}"
                 class="img-fluid rounded-4" alt="Tentang Kami">

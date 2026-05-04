@@ -32,7 +32,7 @@
                             <label class="form-label fw-bold">Foto Profil Utama</label>
                             <input type="file" name="profile_image" class="form-control mb-2" accept="image/*">
                             @if(isset($data->profile_image))
-                                <img src="{{ asset('storage/' . $data->profile_image) }}" class="img-thumbnail" width="200">
+                                <img src="{{ asset( $data->profile_image) }}" class="img-thumbnail" width="200">
                             @endif
                         </div>
                     </div>
@@ -54,18 +54,29 @@
                                     <i class="bi bi-plus"></i> Tambah Misi
                                 </button>
                             </label>
+                            @php
+                                $misi = is_array($data->misi) 
+                                    ? $data->misi 
+                                    : json_decode($data->misi, true);
+                            @endphp
                             <div id="misi-wrapper">
-                                @if(isset($data->misi) && count($data->misi) > 0)
-                                    @foreach($data->misi as $key => $m)
+                                @if(!empty($misi) && count($misi) > 0)
+                                    @foreach($misi as $key => $m)
                                     <div class="input-group mb-2 misi-item">
-                                        <span class="input-group-text bg-light"><i class="bi bi-check-circle"></i></span>
+                                        <span class="input-group-text bg-light">
+                                            <i class="bi bi-check-circle"></i>
+                                        </span>
                                         <input type="text" name="misi[]" class="form-control" value="{{ $m }}" required>
-                                        <button class="btn btn-outline-danger remove-misi" type="button"><i class="bi bi-trash"></i></button>
+                                        <button class="btn btn-outline-danger remove-misi" type="button">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </div>
                                     @endforeach
                                 @else
                                     <div class="input-group mb-2 misi-item">
-                                        <span class="input-group-text bg-light"><i class="bi bi-check-circle"></i></span>
+                                        <span class="input-group-text bg-light">
+                                            <i class="bi bi-check-circle"></i>
+                                        </span>
                                         <input type="text" name="misi[]" class="form-control" placeholder="Masukkan poin misi..." required>
                                     </div>
                                 @endif

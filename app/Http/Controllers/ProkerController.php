@@ -74,39 +74,120 @@ class ProkerController extends Controller
     public function kegiatanIndex() {
         return view('admin.proker.kegiatan');
     }
+
     public function storeKegiatan(Request $request)
     {
         try {
-        return \DB::transaction(function () use ($request) {
-            $filename = null;
-            if ($request->hasFile('photo')) { 
-            $file = $request->file('photo');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/frontendpartials/assets/img/gallery', $filename);
-            $activityId = \DB::table('activities')->insertGetId([
-            'title'       => $request->title,
-            'category'    => $request->category,
-            'event_date'  => $request->event_date,
-            'description' => $request->description,
-            'icon'        => $request->icon,
-            'photo'       => $filename,
-            'created_by'  => Auth::user()->nik,
-            'created_at'  => now(),
-            'created_ip'  => $request->ip(),
-            ]);
-            if ($filename) {
-                \DB::table('activity_photos')->insert([
-                    'activity_id' => $activityId,
-                    'photo_path'  => $filename,
+            return \DB::transaction(function () use ($request) {
+                $filename = null;
+
+                // Upload file
+                if ($request->hasFile('photo')) { 
+                    $file = $request->file('photo');
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('frontendpartials/assets/img/gallery'), $filename);
+                }
+
+                // INSERT activity (WAJIB jalan)
+                $activityId = \DB::table('activities')->insertGetId([
+                    'title'       => $request->title,
                     'category'    => $request->category,
+                    'event_date'  => $request->event_date,
+                    'description' => $request->description,
+                    'icon'        => $request->icon,
+                    'photo'       => $filename,
+                    'created_by'  => Auth::user()->nik,
                     'created_at'  => now(),
+                    'created_ip'  => $request->ip(),
                 ]);
-            }
+
+                // INSERT ke activity_photos kalau ada foto
+                if ($filename) {
+                    \DB::table('activity_photos')->insert([
+                        'activity_id' => $activityId,
+                        'photo_path'  => $filename,
+                        'category'    => $request->category,
+                        'created_at'  => now(),
+                    ]);
+                }
+
+                return redirect()->back()->with('success', 'Agenda dan dokumentasi berhasil disimpan!');
+            });
+
+        } catch (\Exception $e) {
+             dd($e->getMessage());
+            // return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-            return redirect()->back()->with('success', 'Agenda dan dokumentasi berhasil disimpan!');
-        });
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
-}
+
+    public function indexDataKegiatan()
+    {
+        $activities = \DB::table('activities')->latest()->get();
+
+        return view('admin.proker.dataKegiatan', compact('activities'));
+    }
+
+    public function destroyKegiatan($id)
+    {
+        try {
+            \DB::transaction(function () use ($id) {
+
+                // ambil foto dulu
+                $photos = \DB::table('activity_photos')
+                    ->where('activity_id', $id)
+                    ->get();
+
+                foreach ($photos as $photo) {
+                    $path = public_path('frontendpartials/assets/img/gallery/' . $photo->photo_path);
+
+                    if (file_exists($path)) {
+                        unlink($path);
+                    }
+                }
+
+                // hapus data foto
+                \DB::table('activity_photos')->where('activity_id', $id)->delete();
+
+                // hapus activity
+                \DB::table('activities')->where('id', $id)->delete();
+            });
+
+            return redirect()->back()->with('success', 'Data berhasil dihapus');
+
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
+    }
+
+    public function updateKegiatan(Request $request, $id)
+    {
+        try {
+        \DB::transaction(function () use ($request, $id) {
+
+            $data = [
+                'title'       => $request->title,
+                'category'    => $request->category,
+                'event_date'  => $request->event_date,
+                'description' => $request->description,
+                'updated_at'  => now(),
+            ];
+
+            if ($request->hasFile('photo')) {
+                $file = $request->file('photo');
+                $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+
+                $file->move(public_path('frontendpartials/assets/img/gallery'), $filename);
+
+                $data['photo'] = $filename;
+            }
+
+            \DB::table('activities')->where('id', $id)->update($data);
+        });
+
+        return redirect()->back()->with('success', 'Data berhasil diupdate');
+
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
+    }
 }

@@ -1,6 +1,7 @@
 name: Laravel CI-CD
 
 env:
+  # Memaksa penggunaan Node 24 agar tidak muncul warning deprecation
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -14,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # Membuat kontainer database sementara untuk testing
       mysql:
         image: mysql:8.0
         env:
@@ -38,6 +40,7 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, zip
           tools: composer:v2
 
+      # Optimasi: Cache vendor agar run berikutnya lebih cepat
       - name: Cache Composer
         uses: actions/cache@v4
         with:
@@ -53,8 +56,9 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Run Migration, Seed & Tests
+      - name: Run Migration & Tests
         env:
+          # Kita masukkan kredensial DB langsung di sini sebagai env variable
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -62,6 +66,5 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
         run: |
-          # Ditambahkan --seed agar database terisi data awal dari DatabaseSeeder
-          php artisan migrate:fresh --seed --force
+          php artisan migrate --force
           php artisan test

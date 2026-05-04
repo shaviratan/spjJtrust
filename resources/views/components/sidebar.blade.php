@@ -24,7 +24,7 @@
                     @endphp
 
                     <li class="nxl-item {{ $menu->subMenu->count() > 0 ? 'nxl-hasmenu' : '' }}">
-                        <a href="{{ $menuUrl }}" class="nxl-link">
+                        <a href="{{ $menu->url ? route($menu->url) : '#' }}" class="nxl-link">
                             <span class="nxl-micon"><i class="{{ $menu->icon }}"></i></span>
                             <span class="nxl-mtext">{{ $menu->name }}</span>
                             @if ($menu->subMenu->count() > 0)
