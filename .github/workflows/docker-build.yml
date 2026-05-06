@@ -1,10 +1,16 @@
 name: Laravel CI-CD
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: ["main"]
 
 jobs:
+  # =========================
+  # 🧪 LARAVEL TEST
+  # =========================
   laravel-tests:
     runs-on: ubuntu-latest
 
@@ -16,40 +22,103 @@ jobs:
           MYSQL_DATABASE: spjjtrust
         ports:
           - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: mbstring, pdo, pdo_mysql
 
-      - run: cp .env.example .env
-      - run: composer install --no-interaction --prefer-dist
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Configure .env for CI
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=spjjtrust/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
       - run: php artisan key:generate
-      - run: chmod -R 777 storage bootstrap/cache
+      - run: php artisan config:clear
 
-      - run: php artisan migrate --force
-      - run: php artisan test
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist
 
+      - name: Generate Key
+        run: php artisan key:generate
+
+      - name: Set Permissions
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..10}; do
+            nc -z 127.0.0.1 3306 && echo "MySQL ready" && exit 0
+            echo "Waiting MySQL..."
+            sleep 3
+          done
+          exit 1
+
+      - name: Run Migration & Tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: spjjtrust
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          php artisan migrate --force
+          php artisan test
+
+  # =========================
+  # 🐳 DOCKER BUILD & PUSH
+  # =========================
   docker-build:
     runs-on: ubuntu-latest
     needs: laravel-tests
 
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Login Docker Hub
+      # 🔍 DEBUG (cek secret kebaca atau tidak)
+      - name: Check Secrets
+        run: |
+          if [ -z "$DOCKER_USERNAME" ]; then echo "USERNAME EMPTY"; else echo "USERNAME OK"; fi
+          if [ -z "$DOCKER_PASSWORD" ]; then echo "PASSWORD EMPTY"; else echo "PASSWORD OK"; fi
+
+      # ✅ LOGIN (aman, tidak error kalau kosong)
+      - name: Login to Docker Hub
+        if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
-      - name: Build & Push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: shavira/spjjtrust:latest
+      # ✅ BUILD SELALU JALAN
+      - name: Build Docker Image
+        run: docker build -t shavira/spjjtrust:latest .
+
+      # ✅ PUSH HANYA JIKA SECRET ADA
+      - name: Push Docker Image
+        if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
+        run: docker push shavira/spjjtrust:latest
