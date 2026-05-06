@@ -259,8 +259,8 @@
     <div class="row gy-4">
       <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
         <h3>Profile</h3>
-        <img src="{{ asset($compro[0]->profile_image) }}" class="img-fluid profile-img" alt="">
-        <p>{{ $compro[0]->profile_description }}
+        <img src="{{ asset($compro->first()?->profile_image) }}" class="img-fluid profile-img" alt="">
+        <p>{{ $compro->first()?->profile_description }}</p>
         </p>
       </div>
 
@@ -268,23 +268,20 @@
         <div class="content ps-0 ps-lg-5">
             <h4 class="mb-3">Visi</h4>
             <p class="fst-italic">
-           {{ $compro[0]->visi }}
+           {{ $compro->first()?->visi }}
             </p>
             <h4 class="mt-4 mb-3">Misi</h4>
               @php
-                  $misi = $compro[0]->misi ?? [];
+                  $misi = $compro->first()?->misi ?? [];
 
-                  // decode 2x kalau masih string JSON double encode
                   if (is_string($misi)) {
                       $misi = json_decode($misi, true);
 
-                      // kalau masih string (double encode case)
                       if (is_string($misi)) {
                           $misi = json_decode($misi, true);
                       }
                   }
 
-                  // pastikan selalu array
                   if (!is_array($misi)) {
                       $misi = [];
                   }
@@ -715,21 +712,21 @@
                 <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="200">
                   <i class="bi bi-geo-alt"></i>
                   <h3>Address</h3>
-                  <p>{{$compro[0]->address}}</p>
+                  <p>{{ $compro->first()?->address }}</p>
                 </div>
               </div><!-- End Info Item -->
               <div class="col-md-6">
                 <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="300">
                   <i class="bi bi-telephone"></i>
                   <h3>Call Us</h3>
-                  <p>Phone {{$compro[0]->phone}} or whatsapp {{$compro[0]->whatsapp}}</p>
+                  <p>Phone {{ $compro->first()?->phone }} or whatsapp {{ $compro->first()?->whatsapp }}</p>
                 </div>
               </div><!-- End Info Item -->
               <div class="col-md-6">
                 <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="400">
                   <i class="bi bi-envelope"></i>
                   <h3>Email Us</h3>
-                  <p>{{$compro[0]->email}}</p>
+                  <p>{{ $compro->first()?->email }}</p>
                 </div>
               </div><!-- End Info Item -->
             </div>

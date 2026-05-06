@@ -22,7 +22,7 @@ Route::get('/', function () {
                 ->take(3) // Ambil 6 berita saja untuk halaman depan
                 ->get();
     $kegiatan = Activities::orderBy('created_at', 'desc')->get();
-    $compro = Compro::all();
+    $compro = Compro::first();
     return view('frontend.index', compact('news', 'kegiatan', 'compro'));
 })->name('home');
 
