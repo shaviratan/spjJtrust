@@ -78,31 +78,36 @@ jobs:
     runs-on: ubuntu-latest
     needs: laravel-tests
 
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 🔥 DEBUG (lihat apakah secret kebaca)
+      # 🔍 DEBUG (cek secret kebaca atau tidak)
       - name: Check Secrets
         run: |
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then echo "USERNAME EMPTY"; else echo "USERNAME OK"; fi
-          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then echo "PASSWORD EMPTY"; else echo "PASSWORD OK"; fi
+          if [ -z "$DOCKER_USERNAME" ]; then echo "USERNAME EMPTY"; else echo "USERNAME OK"; fi
+          if [ -z "$DOCKER_PASSWORD" ]; then echo "PASSWORD EMPTY"; else echo "PASSWORD OK"; fi
 
-      # ✅ LOGIN HANYA JIKA SECRET ADA
+      # ✅ LOGIN (aman, tidak error kalau kosong)
       - name: Login to Docker Hub
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
       # ✅ BUILD SELALU JALAN
       - name: Build Docker Image
         run: docker build -t shavira/spjjtrust:latest .
 
-      # ✅ PUSH HANYA JIKA LOGIN ADA
+      # ✅ PUSH HANYA JIKA SECRET ADA
       - name: Push Docker Image
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
         run: docker push shavira/spjjtrust:latest
